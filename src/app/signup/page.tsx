@@ -1,31 +1,23 @@
 "use client";
+
+import { useState } from "react";
 import NextImage from "next/image";
-import { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  TextField,
-  Typography,
-  IconButton,
-  InputAdornment,
-  Link,
-  Alert,
-  LinearProgress,
-  CircularProgress,
-  Divider,
-} from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { Box, Alert, Divider, Typography, LinearProgress } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
-import ReceiptIcon from "@mui/icons-material/Receipt";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "../../store/auth.store";
-import { signupService } from "../../services/auth.service";
 import { z } from "zod";
-import { getToken } from "@/src/lib/tokens";
-import { isTokenValid } from "@/src/lib/authGuard";
+import { useAuthStore } from "@/src/store/auth.store";
+import { useAuthRedirect } from "@/src/hooks/useAuthRedirect";
+import { signupService } from "@/src/services/auth.service";
+import { LoadingScreen } from "@/src/components/common/LoadingScreen";
+import { AuthLayout } from "@/src/components/auth/AuthLayout";
+import { AuthCard } from "@/src/components/auth/AuthCard";
+import { FormField } from "@/src/components/Form/FormField";
+import { PasswordField } from "@/src/components/Form/PasswordField";
+import { SubmitButton } from "@/src/components/Form/SubmitButton";
+import { StickyButton } from "@/src/components/Form/StickyButton";
+import { AuthLink } from "@/src/components/auth/AuthLink";
 
 const signupSchema = z.object({
   firstName: z
@@ -82,42 +74,34 @@ const signupSchema = z.object({
     .max(5, "Currency symbol must be max 5 characters."),
 });
 
-interface SignupForm {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  companyName: string;
-  companyLogo: File | null;
-  address: string;
-  city: string;
-  zip: string;
-  industry: string;
-  currencySymbol: string;
-}
-
 export default function SignupPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const { checking } = useAuthRedirect();
 
-  const [form, setForm] = useState<SignupForm>({
+  const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     companyName: "",
-    companyLogo: null,
+    companyLogo: null as File | null,
     address: "",
     city: "",
     zip: "",
     industry: "",
     currencySymbol: "",
   });
-
-  const [showPassword, setShowPassword] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [checking, setChecking] = useState(true);
+
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: signupService,
+    onSuccess: (res) => {
+      login(res.token, res.user, res.company, true);
+      router.push("/dashboard");
+    },
+  });
 
   const getPasswordStrength = (password: string): number => {
     let strength = 0;
@@ -128,37 +112,20 @@ export default function SignupPage() {
     return strength;
   };
 
-  const passwordStrength = getPasswordStrength(form.password);
-
   const validateForm = (): boolean => {
     try {
-      signupSchema.parse({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        password: form.password,
-        companyName: form.companyName,
-        address: form.address,
-        city: form.city,
-        zip: form.zip,
-        industry: form.industry,
-        currencySymbol: form.currencySymbol,
-      });
-
+      signupSchema.parse(form);
       if (form.companyLogo && form.companyLogo.size > 5 * 1024 * 1024) {
         setErrors({ companyLogo: "Logo size must be less than 5MB." });
         return false;
       }
-
       setErrors({});
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
         error.issues.forEach((err) => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0] as string] = err.message;
-          }
+          if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
         });
         setErrors(fieldErrors);
       }
@@ -166,876 +133,343 @@ export default function SignupPage() {
     }
   };
 
-  const { mutate, isPending, error } = useMutation({
-    mutationFn: signupService,
-    onSuccess: (res) => {
-      login(res.token, res.user, res.company, true);
-      router.push("/dashboard");
-    },
-  });
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = getToken();
-      const valid = isTokenValid(token);
-
-      if (valid) {
-        router.replace("/dashboard");
-        return;
-      }
-
-      setChecking(false);
-    };
-
-    checkAuth();
-  }, [router]);
-
-  if (checking) {
-    return (
-      <Box
-        sx={{
-          height: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <CircularProgress size={48} />
-      </Box>
-    );
-  }
-
   const handleSubmit = () => {
     if (validateForm()) {
-      const payload = {
+      mutate({
         firstName: form.firstName.trim(),
-        lastName: form.lastName?.trim() || "",
+        lastName: form.lastName.trim(),
         email: form.email.trim(),
         password: form.password,
         companyName: form.companyName.trim(),
         address: form.address.trim(),
         city: form.city.trim(),
         zipCode: form.zip.trim(),
-        industry: form.industry?.trim() || "",
+        industry: form.industry.trim(),
         currencySymbol: form.currencySymbol.trim(),
         logo: form.companyLogo,
-      };
-
-      mutate(payload);
+      });
     }
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
-        setErrors({
-          ...errors,
-          companyLogo: "Invalid file type. Use PNG or JPG.",
-        });
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors({
-          ...errors,
-          companyLogo: "Logo size must be less than 5MB.",
-        });
-        return;
-      }
-      setForm({ ...form, companyLogo: file });
-      setErrors({ ...errors, companyLogo: "" });
+    if (!file) return;
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
+      setErrors({
+        ...errors,
+        companyLogo: "Invalid file type. Use PNG or JPG.",
+      });
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors({ ...errors, companyLogo: "Logo size must be less than 5MB." });
+      return;
+    }
+
+    setForm({ ...form, companyLogo: file });
+    setErrors({ ...errors, companyLogo: "" });
+
+    const reader = new FileReader();
+    reader.onloadend = () => setLogoPreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
-  const handleFieldChange = (
-    field: keyof SignupForm,
-    value: string | File | null
-  ) => {
+  const handleFieldChange = (field: string, value: string) => {
     setForm({ ...form, [field]: value });
     setErrors({ ...errors, [field]: "" });
   };
 
+  if (checking) return <LoadingScreen />;
+
+  const passwordStrength = getPasswordStrength(form.password);
+
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "#fafafa",
-        display: "flex",
-        flexDirection: "column",
-      }}
+    <AuthLayout
+      title="Create Your Account"
+      subtitle="Set up your company and start invoicing in minutes."
+      showStickyButton
     >
-      <Box
-        sx={{
-          width: "100%",
-          borderBottom: "1px solid #e5e5e5",
-          bgcolor: "white",
-          py: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <ReceiptIcon sx={{ color: "#262626", mr: 1 }} />
-        <Typography
-          variant="h6"
+      <AuthCard>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error?.response?.data || "Could not sign up. Try again."}
+          </Alert>
+        )}
+
+        <Box
           sx={{
-            fontWeight: 500,
-            color: "#262626",
-            fontSize: 20,
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            gap: { xs: 3, md: 4 },
           }}
         >
-          InvoiceApp
-        </Typography>
-      </Box>
+          <Box
+            sx={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}
+          >
+            <Typography sx={{ fontWeight: 400, color: "#212121" }}>
+              User Information
+            </Typography>
+            <Divider />
 
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          justifyContent: "center",
-          py: { xs: 2, md: 6 },
-          px: 2,
-          pb: { xs: 10, md: 6 },
-        }}
-      >
-        <Box sx={{ width: "100%", maxWidth: 900 }}>
-          <Box sx={{ textAlign: "center", mb: 4 }}>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 200, mb: 0.5, color: "#212121" }}
-            >
-              Create Your Account
-            </Typography>
-            <Typography variant="body2" sx={{ color: "#757575" }}>
-              Set up your company and start invoicing in minutes.
-            </Typography>
+            <FormField
+              id="firstName"
+              label="First Name"
+              placeholder="Enter first name"
+              value={form.firstName}
+              onChange={(val) => handleFieldChange("firstName", val)}
+              error={errors.firstName}
+              required
+            />
+
+            <FormField
+              id="lastName"
+              label="Last Name"
+              placeholder="Enter last name"
+              value={form.lastName}
+              onChange={(val) => handleFieldChange("lastName", val)}
+              error={errors.lastName}
+              required
+            />
+
+            <FormField
+              id="email"
+              label="Email"
+              type="email"
+              placeholder="Enter email"
+              value={form.email}
+              onChange={(val) => handleFieldChange("email", val)}
+              error={errors.email}
+              required
+            />
+
+            <Box>
+              <PasswordField
+                id="password"
+                label="Password"
+                placeholder="Enter password"
+                value={form.password}
+                onChange={(val) => handleFieldChange("password", val)}
+                error={errors.password}
+                required
+              />
+              {form.password && (
+                <Box sx={{ mt: 1 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={passwordStrength}
+                    sx={{
+                      height: 6,
+                      borderRadius: 3,
+                      bgcolor: "#e0e0e0",
+                      "& .MuiLinearProgress-bar": {
+                        bgcolor:
+                          passwordStrength < 50
+                            ? "#d32f2f"
+                            : passwordStrength < 75
+                            ? "#ff9800"
+                            : "#4caf50",
+                      },
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ color: "#757575" }}>
+                    Password strength:{" "}
+                    {passwordStrength < 50
+                      ? "Weak"
+                      : passwordStrength < 75
+                      ? "Medium"
+                      : "Strong"}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
 
-          <Card
-            sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}
-            elevation={0}
+          <Box
+            sx={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}
           >
-            <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-              {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                  {error?.response?.data || "Could not sign up. Try again."}
-                </Alert>
-              )}
+            <Typography sx={{ fontWeight: 400, color: "#212121" }}>
+              Company Information
+            </Typography>
+            <Divider />
 
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: {
-                    xs: "column",
-                    sm: "column",
-                    md: "row",
-                  },
-                  gap: {
-                    xs: 3,
-                    sm: 2,
-                    md: 4,
-                  },
-                }}
+            <FormField
+              id="companyName"
+              label="Company Name"
+              placeholder="Enter company name"
+              value={form.companyName}
+              onChange={(val) => handleFieldChange("companyName", val)}
+              error={errors.companyName}
+              required
+            />
+
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 500, color: "#424242", mb: 1 }}
               >
+                Company Logo
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Box
                   sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                    flex: 1,
-                  }}
-                >
-                  <Typography sx={{ fontWeight: 400, color: "#212121" }}>
-                    User Information
-                  </Typography>
-
-                  <Divider />
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      component="label"
-                      htmlFor="firstName"
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      First Name*
-                    </Typography>
-                    <TextField
-                      id="firstName"
-                      fullWidth
-                      placeholder="Enter first name"
-                      value={form.firstName}
-                      onChange={(e) =>
-                        handleFieldChange("firstName", e.target.value)
-                      }
-                      error={!!errors.firstName}
-                      helperText={errors.firstName}
-                      size="small"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                        },
-                        "& .MuiFormHelperText-root": {
-                          color: "#d32f2f",
-                          mx: 0,
-                          mt: 0.5,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      component="label"
-                      htmlFor="lastName"
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      Last Name*
-                    </Typography>
-                    <TextField
-                      id="lastName"
-                      fullWidth
-                      placeholder="Enter last name"
-                      value={form.lastName}
-                      onChange={(e) =>
-                        handleFieldChange("lastName", e.target.value)
-                      }
-                      error={!!errors.lastName}
-                      helperText={errors.lastName}
-                      size="small"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                        },
-                        "& .MuiFormHelperText-root": {
-                          color: "#d32f2f",
-                          mx: 0,
-                          mt: 0.5,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      component="label"
-                      htmlFor="email"
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      Email*
-                    </Typography>
-                    <TextField
-                      id="email"
-                      fullWidth
-                      type="email"
-                      placeholder="Enter email"
-                      value={form.email}
-                      onChange={(e) =>
-                        handleFieldChange("email", e.target.value)
-                      }
-                      error={!!errors.email}
-                      helperText={errors.email}
-                      size="small"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                        },
-                        "& .MuiFormHelperText-root": {
-                          color: "#d32f2f",
-                          mx: 0,
-                          mt: 0.5,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      component="label"
-                      htmlFor="password"
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      Password*
-                    </Typography>
-                    <TextField
-                      id="password"
-                      fullWidth
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter password"
-                      value={form.password}
-                      onChange={(e) =>
-                        handleFieldChange("password", e.target.value)
-                      }
-                      error={!!errors.password}
-                      helperText={errors.password}
-                      size="small"
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                              size="small"
-                              sx={{ color: "#9e9e9e" }}
-                            >
-                              {showPassword ? (
-                                <VisibilityOff />
-                              ) : (
-                                <Visibility />
-                              )}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                        },
-                        "& .MuiFormHelperText-root": {
-                          color: "#d32f2f",
-                          mx: 0,
-                          mt: 0.5,
-                        },
-                      }}
-                    />
-                    {form.password && (
-                      <Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={passwordStrength}
-                          sx={{
-                            height: 6,
-                            borderRadius: 3,
-                            bgcolor: "#e0e0e0",
-                            "& .MuiLinearProgress-bar": {
-                              bgcolor:
-                                passwordStrength < 50
-                                  ? "#d32f2f"
-                                  : passwordStrength < 75
-                                  ? "#ff9800"
-                                  : "#4caf50",
-                            },
-                          }}
-                        />
-                        <Typography variant="caption" sx={{ color: "#757575" }}>
-                          Password strength:{" "}
-                          {passwordStrength < 50
-                            ? "Weak"
-                            : passwordStrength < 75
-                            ? "Medium"
-                            : "Strong"}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                    flex: 1,
-                  }}
-                >
-                  <Typography sx={{ fontWeight: 400, color: "#212121" }}>
-                    Company Information
-                  </Typography>
-
-                  <Divider />
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      component="label"
-                      htmlFor="companyName"
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      Company Name*
-                    </Typography>
-                    <TextField
-                      id="companyName"
-                      fullWidth
-                      placeholder="Enter company name"
-                      value={form.companyName}
-                      onChange={(e) =>
-                        handleFieldChange("companyName", e.target.value)
-                      }
-                      error={!!errors.companyName}
-                      helperText={errors.companyName}
-                      size="small"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                        },
-                        "& .MuiFormHelperText-root": {
-                          color: "#d32f2f",
-                          mx: 0,
-                          mt: 0.5,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      Company Logo
-                    </Typography>
-
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      {/* LEFT PREVIEW BOX */}
-                      <Box
-                        sx={{
-                          width: 64,
-                          height: 56,
-                          borderRadius: 1,
-                          border: "1px dashed #cfcfcf",
-                          bgcolor: "#f5f5f5",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          position: "relative",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {logoPreview ? (
-                          <NextImage
-                            src={logoPreview}
-                            alt="Logo preview"
-                            fill
-                            style={{
-                              objectFit: "contain",
-                            }}
-                          />
-                        ) : (
-                          <ImageIcon sx={{ color: "#9e9e9e", fontSize: 26 }} />
-                        )}
-                      </Box>
-
-                      <Box
-                        sx={{
-                          width: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 0.5,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            border: "1px solid #d0d0d0",
-                            borderRadius: "4px",
-                            backgroundColor: "#fff",
-                            width: "100%",
-                            height: 40,
-                            display: "flex",
-                            alignItems: "center",
-                            paddingLeft: 1.2,
-                            fontSize: "0.875rem",
-                            color: "#424242",
-                            cursor: "pointer",
-                            "&:hover": {
-                              borderColor: "#9e9e9e",
-                            },
-                          }}
-                          onClick={() =>
-                            document.getElementById("companyLogoInput")?.click()
-                          }
-                        >
-                          {form.companyLogo
-                            ? form.companyLogo.name
-                            : "No file chosen"}
-                        </Box>
-
-                        <input
-                          id="companyLogoInput"
-                          type="file"
-                          accept="image/png,image/jpeg,image/jpg"
-                          onChange={handleLogoChange}
-                          style={{ display: "none" }}
-                        />
-
-                        <Typography variant="caption" sx={{ color: "#757575" }}>
-                          Max 2–5 MB
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {errors.companyLogo && (
-                      <Typography variant="caption" sx={{ color: "#d32f2f" }}>
-                        {errors.companyLogo}
-                      </Typography>
-                    )}
-                  </Box>
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      component="label"
-                      htmlFor="address"
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      Address*
-                    </Typography>
-                    <TextField
-                      id="address"
-                      fullWidth
-                      multiline
-                      rows={2}
-                      placeholder="Enter company address"
-                      value={form.address}
-                      onChange={(e) =>
-                        handleFieldChange("address", e.target.value)
-                      }
-                      error={!!errors.address}
-                      helperText={errors.address}
-                      size="small"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                        },
-                        "& .MuiFormHelperText-root": {
-                          color: "#d32f2f",
-                          mx: 0,
-                          mt: 0.5,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 1,
-                        flex: 1,
-                      }}
-                    >
-                      <Typography
-                        component="label"
-                        htmlFor="city"
-                        variant="body2"
-                        sx={{
-                          fontWeight: 500,
-                          color: "#424242",
-                          display: "block",
-                        }}
-                      >
-                        City*
-                      </Typography>
-                      <TextField
-                        id="city"
-                        fullWidth
-                        placeholder="Enter city"
-                        value={form.city}
-                        onChange={(e) =>
-                          handleFieldChange("city", e.target.value)
-                        }
-                        error={!!errors.city}
-                        helperText={errors.city}
-                        size="small"
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            fontSize: "0.875rem",
-                          },
-                          "& .MuiFormHelperText-root": {
-                            color: "#d32f2f",
-                            mx: 0,
-                            mt: 0.5,
-                          },
-                        }}
-                      />
-                    </Box>
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 1,
-                        flex: 1,
-                      }}
-                    >
-                      <Typography
-                        component="label"
-                        htmlFor="zip"
-                        variant="body2"
-                        sx={{
-                          fontWeight: 500,
-                          color: "#424242",
-                          display: "block",
-                        }}
-                      >
-                        Zip Code*
-                      </Typography>
-                      <TextField
-                        id="zip"
-                        fullWidth
-                        placeholder="6 digits zip code"
-                        value={form.zip}
-                        onChange={(e) => {
-                          const value = e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 6);
-                          handleFieldChange("zip", value);
-                        }}
-                        error={!!errors.zip}
-                        helperText={errors.zip}
-                        size="small"
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            fontSize: "0.875rem",
-                          },
-                          "& .MuiFormHelperText-root": {
-                            color: "#d32f2f",
-                            mx: 0,
-                            mt: 0.5,
-                          },
-                        }}
-                      />
-                    </Box>
-                  </Box>
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      component="label"
-                      htmlFor="industry"
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      Industry
-                    </Typography>
-                    <TextField
-                      id="industry"
-                      fullWidth
-                      placeholder="Industry type"
-                      value={form.industry}
-                      onChange={(e) =>
-                        handleFieldChange("industry", e.target.value)
-                      }
-                      error={!!errors.industry}
-                      helperText={errors.industry}
-                      size="small"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      component="label"
-                      htmlFor="currencySymbol"
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        color: "#424242",
-                        display: "block",
-                      }}
-                    >
-                      Currency Symbol*
-                    </Typography>
-                    <TextField
-                      id="currencySymbol"
-                      fullWidth
-                      placeholder="$, ₹, €, AED"
-                      value={form.currencySymbol}
-                      onChange={(e) =>
-                        handleFieldChange(
-                          "currencySymbol",
-                          e.target.value.slice(0, 5)
-                        )
-                      }
-                      error={!!errors.currencySymbol}
-                      helperText={errors.currencySymbol}
-                      size="small"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                        },
-                        "& .MuiFormHelperText-root": {
-                          color: "#d32f2f",
-                          mx: 0,
-                          mt: 0.5,
-                        },
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-
-              <Divider sx={{ marginTop: 3 }} />
-
-              <Box
-                sx={{
-                  display: { xs: "none", md: "flex" },
-                  justifyContent: "flex-end",
-                  mt: 3,
-                }}
-              >
-                <Button
-                  disabled={isPending}
-                  onClick={handleSubmit}
-                  sx={{
-                    bgcolor: "#525252",
-                    color: "white",
-                    px: 4,
-                    height: 42,
-                    textTransform: "none",
+                    width: 64,
+                    height: 56,
                     borderRadius: 1,
-                    "&:hover": { bgcolor: "#424242" },
-                    "&:disabled": {
-                      bgcolor: "#e0e0e0",
-                      color: "#9e9e9e",
-                    },
+                    border: "1px dashed #cfcfcf",
+                    bgcolor: "#f5f5f5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                    flexShrink: 0,
                   }}
                 >
-                  {isPending ? (
-                    <CircularProgress size={16} sx={{ color: "#9e9e9e" }} />
+                  {logoPreview ? (
+                    <NextImage
+                      src={logoPreview}
+                      alt="Logo preview"
+                      fill
+                      style={{ objectFit: "contain" }}
+                    />
                   ) : (
-                    "Sign Up"
+                    <ImageIcon sx={{ color: "#9e9e9e", fontSize: 26 }} />
                   )}
-                </Button>
-              </Box>
-
-              {/* Login Link */}
-              <Box sx={{ textAlign: "center", mt: 3 }}>
-                <Typography sx={{ color: "#757575", fontSize: 14 }}>
-                  Already have an account?{" "}
-                  <Link
-                    component="button"
-                    onClick={() => router.push("/login")}
+                </Box>
+                <Box
+                  sx={{
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.5,
+                  }}
+                >
+                  <Box
                     sx={{
-                      color: "#525252",
-                      fontWeight: 500,
-                      textDecoration: "none",
-                      "&:hover": { textDecoration: "underline" },
+                      border: "1px solid #d0d0d0",
+                      borderRadius: "4px",
+                      backgroundColor: "#fff",
+                      height: 40,
+                      display: "flex",
+                      alignItems: "center",
+                      paddingLeft: 1.2,
+                      fontSize: "0.875rem",
+                      color: "#424242",
+                      cursor: "pointer",
+                      "&:hover": { borderColor: "#9e9e9e" },
                     }}
+                    onClick={() =>
+                      document.getElementById("companyLogoInput")?.click()
+                    }
                   >
-                    Login
-                  </Link>
-                </Typography>
+                    {form.companyLogo
+                      ? form.companyLogo.name
+                      : "No file chosen"}
+                  </Box>
+                  <input
+                    id="companyLogoInput"
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleLogoChange}
+                    style={{ display: "none" }}
+                  />
+                  <Typography variant="caption" sx={{ color: "#757575" }}>
+                    Max 2–5 MB
+                  </Typography>
+                </Box>
               </Box>
-            </CardContent>
-          </Card>
+              {errors.companyLogo && (
+                <Typography
+                  variant="caption"
+                  sx={{ color: "#d32f2f", mt: 0.5 }}
+                >
+                  {errors.companyLogo}
+                </Typography>
+              )}
+            </Box>
+
+            <FormField
+              id="address"
+              label="Address"
+              placeholder="Enter company address"
+              value={form.address}
+              onChange={(val) => handleFieldChange("address", val)}
+              error={errors.address}
+              multiline
+              rows={2}
+              required
+            />
+
+            <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
+              <Box sx={{ flex: 1 }}>
+                <FormField
+                  id="city"
+                  label="City"
+                  placeholder="Enter city"
+                  value={form.city}
+                  onChange={(val) => handleFieldChange("city", val)}
+                  error={errors.city}
+                  required
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <FormField
+                  id="zip"
+                  label="Zip Code"
+                  placeholder="6 digits"
+                  value={form.zip}
+                  onChange={(val) =>
+                    handleFieldChange("zip", val.replace(/\D/g, "").slice(0, 6))
+                  }
+                  error={errors.zip}
+                  maxLength={6}
+                  required
+                />
+              </Box>
+            </Box>
+
+            <FormField
+              id="industry"
+              label="Industry"
+              placeholder="Industry type"
+              value={form.industry}
+              onChange={(val) => handleFieldChange("industry", val)}
+              error={errors.industry}
+            />
+
+            <FormField
+              id="currencySymbol"
+              label="Currency Symbol"
+              placeholder="$, ₹, €, AED"
+              value={form.currencySymbol}
+              onChange={(val) => handleFieldChange("currencySymbol", val)}
+              error={errors.currencySymbol}
+              maxLength={5}
+              required
+            />
+          </Box>
         </Box>
-      </Box>
 
-      <Box
-        sx={{
-          display: { xs: "block", md: "none" },
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          bgcolor: "white",
-          borderTop: "1px solid #e5e5e5",
-          p: 2,
-          zIndex: 1000,
-        }}
-      >
-        <Button
-          disabled={isPending}
-          onClick={handleSubmit}
-          fullWidth
-          sx={{
-            bgcolor: "#525252",
-            color: "white",
-            height: 48,
-            textTransform: "none",
-            borderRadius: 1,
-            fontSize: "16px",
-            fontWeight: 500,
-            "&:hover": { bgcolor: "#424242" },
-            "&:disabled": {
-              bgcolor: "#e0e0e0",
-              color: "#9e9e9e",
-            },
-          }}
-        >
-          {isPending ? (
-            <CircularProgress size={20} sx={{ color: "#9e9e9e" }} />
-          ) : (
-            "Sign Up"
-          )}
-        </Button>
-      </Box>
+        <Divider
+          sx={{ mt: 3, display: { sm: "none", xs: "none", md: "block" } }}
+        />
 
-      <Box
-        sx={{
-          borderTop: "1px solid #e5e5e5",
-          py: 3,
-          bgcolor: "white",
-          textAlign: "center",
-        }}
-      >
-        <Typography sx={{ color: "#737373", fontSize: 12 }}>
-          © 2025 InvoiceApp. All rights reserved.
-        </Typography>
-      </Box>
-    </Box>
+        <Box sx={{ display: { xs: "none", md: "block" }, mt: 3 }}>
+          <SubmitButton onClick={handleSubmit} loading={isPending} endAligned>
+            Sign Up
+          </SubmitButton>
+        </Box>
+
+        <AuthLink
+          text="Already have an account?"
+          linkText="Login"
+          href="/login"
+        />
+      </AuthCard>
+
+      <StickyButton onClick={handleSubmit} loading={isPending}>
+        Sign Up
+      </StickyButton>
+    </AuthLayout>
   );
 }
