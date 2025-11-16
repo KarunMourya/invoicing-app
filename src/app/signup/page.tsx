@@ -13,10 +13,10 @@ import { signupService } from "@/src/services/auth.service";
 import { LoadingScreen } from "@/src/components/common/LoadingScreen";
 import { AuthLayout } from "@/src/components/auth/AuthLayout";
 import { AuthCard } from "@/src/components/auth/AuthCard";
-import { FormField } from "@/src/components/Form/FormField";
-import { PasswordField } from "@/src/components/Form/PasswordField";
-import { SubmitButton } from "@/src/components/Form/SubmitButton";
-import { StickyButton } from "@/src/components/Form/StickyButton";
+import { FormField } from "@/src/components/form/FormField";
+import { PasswordField } from "@/src/components/form/PasswordField";
+import { SubmitButton } from "@/src/components/form/SubmitButton";
+import { StickyButton } from "@/src/components/form/StickyButton";
 import { AuthLink } from "@/src/components/auth/AuthLink";
 
 const signupSchema = z.object({
