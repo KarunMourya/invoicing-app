@@ -24,7 +24,6 @@ import {
   Inventory as InventoryIcon,
   Receipt as ReceiptIcon,
   Logout as LogoutIcon,
-  Person as PersonIcon,
 } from "@mui/icons-material";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/src/store/auth.store";
@@ -41,7 +40,7 @@ export function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const { user, company, logout } = useAuthStore();
+  const { logout } = useAuthStore();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -117,18 +116,14 @@ export function Layout({ children }: LayoutProps) {
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                />
+                <ListItemText primary={item.text} />
               </ListItemButton>
             </ListItem>
           );
         })}
       </List>
 
-      <Divider />
-
-      <List sx={{ pb: 2 }}>
+      <List disablePadding>
         <ListItem disablePadding sx={{ px: 2 }}>
           <ListItemButton
             onClick={handleLogout}
@@ -249,7 +244,6 @@ export function Layout({ children }: LayoutProps) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
           width: { xs: "100%", md: `calc(100% - ${drawerWidth}px)` },
           minHeight: "100vh",
           bgcolor: "#fafafa",

@@ -11,7 +11,6 @@ export const isTokenValid = (token: string | null) => {
 
   try {
     const decoded = jwtDecode<TokenPayload>(token);
-    console.log('decoded: ', decoded);
 
     if (!decoded.exp) return false;
 
