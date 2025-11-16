@@ -6,7 +6,7 @@ export interface Item {
   description: string;
   salesRate: number;
   discountPct: number;
-  imageUrl?: string | null;
+  itemPicture?: string | null;
   updatedOn?: string | null;
 }
 
@@ -15,6 +15,7 @@ export interface CreateItemPayload {
   description: string;
   salesRate: number;
   discountPct: number;
+  itemPicture?: string | null;
 }
 
 export interface UpdateItemPayload {
@@ -24,6 +25,7 @@ export interface UpdateItemPayload {
   salesRate: number;
   discountPct: number;
   updatedOn: string | null;
+  itemPicture?: string | null;
 }
 
 export const itemService = {

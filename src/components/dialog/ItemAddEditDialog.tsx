@@ -56,6 +56,7 @@ interface Item {
   itemName: string;
   description: string;
   salesRate: number;
+  itemPicture?: string;
   discountPct: number;
   updatedOn?: string | null;
 }
@@ -165,6 +166,9 @@ export function ItemAddEditDialog({
         discountPct: parseFloat(form.discountPct),
       };
 
+      if (picturePreview) {
+        payload.itemPicture = picturePreview;
+      }
       await onSave(payload);
       onClose();
     } catch (error) {
@@ -271,8 +275,7 @@ export function ItemAddEditDialog({
                 {errors.itemPicture}
               </Typography>
             )}
-          </Box>
-          {" "}
+          </Box>{" "}
           <Box>
             <Typography
               variant="body2"

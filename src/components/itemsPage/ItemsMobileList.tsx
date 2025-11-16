@@ -32,9 +32,9 @@ export default function ItemsMobileList({ rows, onEdit, onDelete }: Props) {
                   border: "1px solid #e0e0e0",
                 }}
               >
-                {item?.imageUrl ? (
+                {item?.itemPicture ? (
                   <Image
-                    src={item?.imageUrl}
+                    src={item?.itemPicture}
                     alt={item.itemName}
                     fill
                     style={{
