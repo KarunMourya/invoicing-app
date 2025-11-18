@@ -239,3 +239,24 @@ npm start
 * Protected routes using middleware-like system
 * Redirect based on login state
 
+---
+# UI Views
+
+### **Sign up page**
+![sign-up-page](public/ui/image.png)
+
+### **Login page**
+![login-in-page](public/ui/image-1.png)
+
+### **Dashboard page**
+![dashboard-page](public/ui/image-2.png)
+
+### **Items page**
+![items-page-list](public/ui/image-3.png)
+![items-page-edit-add](public/ui/image-4.png)
+![items-page-mobile](public/ui/image-5.png)
+
+### **Invoice page**
+![invoice-page-web](public/ui/image-7.png)
+![invoice-page-new](public/ui/image-8.png)
+![invoice-page-mobile](public/ui/image-6.png)
