@@ -56,7 +56,7 @@ interface Item {
   itemName: string;
   description: string;
   salesRate: number;
-  itemPicture?: string;
+  itemPicture?: string | null;
   discountPct: number;
   updatedOn?: string | null;
 }
@@ -164,7 +164,7 @@ export function ItemAddEditDialog({
         description: form.description.trim(),
         salesRate: parseFloat(form.salesRate),
         discountPct: parseFloat(form.discountPct),
-      };
+      } as Item;
 
       if (picturePreview) {
         payload.itemPicture = picturePreview;

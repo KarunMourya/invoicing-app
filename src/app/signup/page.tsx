@@ -18,6 +18,7 @@ import { PasswordField } from "@/src/components/form/PasswordField";
 import { SubmitButton } from "@/src/components/form/SubmitButton";
 import { StickyButton } from "@/src/components/form/StickyButton";
 import { AuthLink } from "@/src/components/auth/AuthLink";
+import axios from "axios";
 
 const signupSchema = z.object({
   firstName: z
@@ -193,7 +194,9 @@ export default function SignupPage() {
       <AuthCard>
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
-            {error?.response?.data || "Could not sign up. Try again."}
+            {axios.isAxiosError(error)
+              ? error.response?.data || "Could not sign up. Try again."
+              : "Could not sign up. Try again."}
           </Alert>
         )}
 

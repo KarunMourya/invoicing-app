@@ -7,6 +7,7 @@ import {
   UpdateItemPayload,
 } from "@/src/services/item.service";
 import { filterAndSortItems } from "@/src/utils/itemsSortAndFilter";
+import axios from "axios";
 
 type Order = "asc" | "desc";
 
@@ -54,8 +55,9 @@ export const useItemsLogic = () => {
     onError: (error) => {
       setSnackbar({
         open: true,
-        message:
-          error?.response?.data || error.message || "Failed to create item",
+        message: axios.isAxiosError(error)
+          ? error?.response?.data || error.message
+          : "Failed to create item",
         severity: "error",
       });
     },
@@ -75,8 +77,9 @@ export const useItemsLogic = () => {
     onError: (error) => {
       setSnackbar({
         open: true,
-        message:
-          error?.response?.data || error.message || "Failed to update item",
+        message: axios.isAxiosError(error)
+          ? error?.response?.data || error.message
+          : "Failed to update item",
         severity: "error",
       });
     },
@@ -96,8 +99,9 @@ export const useItemsLogic = () => {
     onError: (error) => {
       setSnackbar({
         open: true,
-        message:
-          error?.response?.data || error.message || "Failed to delete item",
+        message: axios.isAxiosError(error)
+          ? error?.response?.data || error.message
+          : "Failed to delete item",
         severity: "error",
       });
     },

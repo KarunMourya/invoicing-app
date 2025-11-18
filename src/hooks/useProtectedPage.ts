@@ -14,6 +14,7 @@ export function useProtectedPage() {
 
       if (!valid) {
         router.replace("/login");
+        setChecking(false);
         return;
       }
 
