@@ -1,36 +1,241 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# **Invoicing App**
 
-## Getting Started
+A modern, full-featured invoicing and item-management web application built using **Next.js 16 (App Router), TypeScript, Material UI, Zustand, and React Query**.
+This app includes company registration, authentication, item catalog management, invoice creation, PDF export, dashboards, and analytics.
 
-First, run the development server:
+---
+
+# **Features**
+
+## Authentication
+
+* **Signup** – Register a company and its first user.
+* **Login** – Secure login using email & password.
+* JWT-based session management using **Zustand** + interceptor-based token handling.
+
+---
+
+## **Item Master Management**
+
+* Item list with search, sorting, and pagination.
+* Create/update items:
+  * Name, description, rate, discount, image upload.
+* Mobile-friendly card view.
+* Delete confirmation dialog.
+* Column visibility management.
+* Fetch item pictures via API.
+
+---
+
+## **Invoice Management**
+
+### List View
+
+* Filter by date range: Today, Week, Month, Year, Custom.
+* Search by invoice no., customer name, or amount.
+* Inline mini-dashboard (metrics, trends, top items).
+* Export invoices as CSV.
+
+### Editor
+
+* Create and edit customer + item lines.
+* Realtime calculation (subtotal, tax, total).
+* Add/remove invoice lines.
+
+### Print / PDF
+
+* Auto-fetch invoice details.
+* One-click PDF generation using `jsPDF`.
+* One-click all invoices csv file.
+
+---
+
+## **Dashboard**
+
+Interactive charts built using **Recharts**:
+
+* Invoice Trend (Last 12 Months)
+* Monthly Invoice Count
+* Top Selling Items
+* Total Invoice Metrics
+* Responsive with fixed chart heights (mobile-friendly)
+
+---
+
+# **Tech Stack**
+
+### **Frontend**
+
+* **Next.js 16 (App Router)**
+* **React 19**
+* **TypeScript**
+* **Material UI (MUI 7)**
+* **Recharts**
+* **Zustand** – state management
+* **React Query v5** – server state caching + auto refetch
+* **Axios** – API client
+
+### **Utilities**
+
+* **jsPDF** – Invoice PDF generation
+* **date-fns** – date handling
+* **jwt-decode** – JWT parsing
+
+---
+
+# **Project Structure**
+
+```
+src/
+├── app/
+│   ├── (protected)/
+│   │   ├── dashboard/
+│   │   ├── invoices/
+│   │   ├── items/
+│   │   └── layout.tsx
+│   ├── login/
+│   ├── signup/
+│   └── layout.tsx
+│
+├── components/
+│   ├── common/
+│   ├── dialog/
+│   ├── InvoicePage/
+│   ├── itemsPage/
+│   └── protected/
+│
+├── hooks/
+│   ├── useDashboardMetrics.ts
+│   ├── useInvoicesLogic.ts
+│   ├── useItemsLogic.ts
+│   ├── useAuthRedirect.ts
+│   └── ...
+│
+├── lib/
+│   ├── axiosClient.ts
+│   ├── authGuard.ts
+│   ├── queryClient.ts
+│   └── tokens.ts
+│
+├── providers/
+│   └── AppProviders.tsx
+│
+├── services/
+│   ├── invoice.service.ts
+│   ├── item.service.ts
+│   └── ...
+│
+├── store/
+│   └── auth.store.ts
+│
+├── utils/
+│   ├── invoicePDF.ts
+│   ├── itemsSortAndFilter.ts
+│   └── FormatMoney.ts
+│
+└── constants/
+    ├── item.constant.ts
+
+```
+
+---
+
+# **Scripts**
+
+```json
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start --p 3001",
+  "lint": "eslint"
+}
+```
+
+---
+
+# **Environment Variables**
+
+Create `.env.local`:
+
+```
+NEXT_PUBLIC_API_URL=your-backend-api-url
+```
+
+---
+
+# **Installation & Setup**
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/your-repo/invoicing-app.git
+cd invoicing-app
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Setup env variables
+
+```bash
+NEXT_PUBLIC_API_URL=https://test.com
+```
+
+### 4. Start development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 5. Production build
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+# **Key Hooks Overview**
 
-To learn more about Next.js, take a look at the following resources:
+### **useInvoicesLogic.jsx**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* Handles date filtering
+* Search
+* CRUD operations
+* PDF generation
+* React Query data fetching
+* Top items, trend, metrics
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### **useItemsLogic.jsx**
 
-## Deploy on Vercel
+* Item CRUD
+* Uploading item picture
+* Sorting & filtering
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### **useDashboardMetrics.jsx**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* Trend
+* Metrics
+* Top items
+* Ready for charts
+
+---
+
+# **Invoice PDF Function**
+
+* Auto-fetch invoice detail
+* Generate PDF with company info
+* Works on **single click**
+
+---
+
+# **Authentication**
+
+* Zustand store handles user + tokens
+* Protected routes using middleware-like system
+* Redirect based on login state
+
