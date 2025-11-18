@@ -182,37 +182,57 @@ export const InvoiceStatsCards: React.FC<InvoiceStatsCardsProps> = ({
           {isTopItemsLoading ? (
             <Skeleton variant="rectangular" height={180} />
           ) : topItems && topItems.length > 0 ? (
-            <Box
-              sx={{
-                width: "100%",
-                height: 200,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                paddingY: 1,
-              }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={topItems.map((i) => ({
-                      name: i.itemName,
-                      value: i.amountSum,
-                    }))}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={40}
-                    outerRadius={70}
-                    paddingAngle={4}
-                  >
-                    {topItems.map((_, index) => (
-                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </Box>
+            topItems.length === 1 ? (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 4,
+                  color: "#374151",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                }}
+              >
+                <Typography variant="h6">{topItems[0].itemName}</Typography>
+                <Typography variant="body1" sx={{ mt: 1 }}>
+                  ${topItems[0].amountSum.toFixed(2)}
+                </Typography>
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: 200,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingY: 1,
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={topItems.map((i) => ({
+                        name: i.itemName,
+                        value: i.amountSum,
+                      }))}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={4}
+                    >
+                      {topItems.map((_, index) => (
+                        <Cell
+                          key={index}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
+            )
           ) : (
             <Typography sx={{ color: "#9ca3af", textAlign: "center", mt: 4 }}>
               No data available

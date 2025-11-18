@@ -1,39 +1,34 @@
 import React from "react";
-import { Box, IconButton, Button, TablePagination } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Button,
+  TablePagination,
+  Typography,
+} from "@mui/material";
 
-interface ItemsPaginationProps {
+interface PaginationProps {
   count: number;
   page: number;
+  variant?: "insider-pagination" | "outside-pagination";
+  sx: Record<string, unknown>;
   rowsPerPage: number;
   onPageChange: (event: unknown, newPage: number) => void;
   onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const ItemsPagination: React.FC<ItemsPaginationProps> = ({
+const Pagination: React.FC<PaginationProps> = ({
   count,
   page,
+  variant = "insider-pagination",
   rowsPerPage,
+  sx,
   onPageChange,
   onRowsPerPageChange,
 }) => {
+  const isInsiderVariant = variant === "insider-pagination";
   return (
-    <Box
-      sx={{
-        position: "fixed",
-        bottom: 0,
-        left: { md: "260px" },
-        right: 0,
-        bgcolor: "white",
-        borderTop: "1px solid #e5e5e5",
-        px: { xs: 2, md: 4 },
-        zIndex: 1000,
-        width: {
-          sm: "100%",
-          xs: "100%",
-          md: "auto",
-        },
-      }}
-    >
+    <Box sx={sx}>
       <TablePagination
         component="div"
         count={count}
@@ -71,6 +66,11 @@ const ItemsPagination: React.FC<ItemsPaginationProps> = ({
                 justifyContent: "flex-end",
               }}
             >
+              {!isInsiderVariant && (
+                <Typography>
+                  {totalPages} - {totalPages * rowsPerPage} of {count}
+                </Typography>
+              )}
               <IconButton
                 size="small"
                 disabled={page === 0}
@@ -84,27 +84,28 @@ const ItemsPagination: React.FC<ItemsPaginationProps> = ({
                 {"<"}
               </IconButton>
 
-              {[...Array(totalPages)].map((_, index) => (
-                <Button
-                  key={index}
-                  onClick={(event) => onPageChange(event, index)}
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    minWidth: 28,
-                    px: 0,
-                    fontSize: 14,
-                    borderRadius: 1,
-                    bgcolor: index === page ? "#525252" : "transparent",
-                    color: index === page ? "#fff" : "#424242",
-                    "&:hover": {
-                      bgcolor: index === page ? "#424242" : "#F5F5F5",
-                    },
-                  }}
-                >
-                  {index + 1}
-                </Button>
-              ))}
+              {isInsiderVariant &&
+                [...Array(totalPages)].map((_, index) => (
+                  <Button
+                    key={index}
+                    onClick={(event) => onPageChange(event, index)}
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      minWidth: 28,
+                      px: 0,
+                      fontSize: 14,
+                      borderRadius: 1,
+                      bgcolor: index === page ? "#525252" : "transparent",
+                      color: index === page ? "#fff" : "#424242",
+                      "&:hover": {
+                        bgcolor: index === page ? "#424242" : "#F5F5F5",
+                      },
+                    }}
+                  >
+                    {index + 1}
+                  </Button>
+                ))}
 
               <IconButton
                 size="small"
@@ -126,4 +127,4 @@ const ItemsPagination: React.FC<ItemsPaginationProps> = ({
   );
 };
 
-export default ItemsPagination;
+export default Pagination;

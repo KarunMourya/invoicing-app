@@ -22,7 +22,7 @@ import axios from "axios";
 
 type DateRange = "today" | "week" | "month" | "year" | "custom";
 
-export const useInvoices = () => {
+export const useInvoicesLogic = () => {
   const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRange>("month");
   const [customDateRange, setCustomDateRange] = useState({ from: "", to: "" });

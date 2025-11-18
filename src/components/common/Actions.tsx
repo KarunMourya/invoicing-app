@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import { Add, FileDownload, ViewColumn, Search } from "@mui/icons-material";
 
-interface ItemsActionsProps {
+interface ActionsProps {
   query: string;
   setQuery: (query: string) => void;
   onAdd: () => void;
@@ -17,7 +17,7 @@ interface ItemsActionsProps {
   isMobile: boolean;
 }
 
-const ItemsActions: React.FC<ItemsActionsProps> = ({
+const Actions: React.FC<ActionsProps> = ({
   query,
   setQuery,
   onAdd,
@@ -65,7 +65,7 @@ const ItemsActions: React.FC<ItemsActionsProps> = ({
           width: {
             sm: "100%",
             xs: "100%",
-            md: "initial",
+            lg: "initial",
           },
         }}
       >
@@ -114,4 +114,4 @@ const ItemsActions: React.FC<ItemsActionsProps> = ({
   );
 };
 
-export default ItemsActions;
+export default Actions;
