@@ -32,8 +32,8 @@ interface AuthState {
     remember: boolean
   ) => void;
   logout: () => void;
-  getCompanyInfo: () => Company;
-  getUserInfo: () => User;
+  getCompanyInfo: () => Company | null;
+  getUserInfo: () => User | null;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({

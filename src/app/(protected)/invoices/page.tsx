@@ -16,9 +16,9 @@ import {
 import { useRouter } from "next/navigation";
 import { useInvoicesLogic } from "@/src/hooks/useInvoicesLogic";
 import { Invoice } from "@/src/services/invoice.service";
-import { InvoiceStatsCards } from "@/src/components/Invoice/InvoiceStatsCards";
-import { InvoiceTable } from "@/src/components/Invoice/InvoiceTable";
-import { InvoiceMobileCards } from "@/src/components/Invoice/InvoiceMobileCards";
+import { InvoiceStatsCards } from "@/src/components/InvoicePage/InvoiceStatsCards";
+import { InvoiceTable } from "@/src/components/InvoicePage/InvoiceTable";
+import { InvoiceMobileLists } from "@/src/components/InvoicePage/InvoiceMobileLists";
 import InvoiceDeleteDialog from "@/src/components/dialog/InvoiceDeleteDialog";
 import { usePagination } from "@/src/hooks/usePagination";
 import Actions from "@/src/components/common/Actions";
@@ -174,7 +174,7 @@ export default function InvoicesPage() {
             <CircularProgress />
           </Box>
         ) : isMobile ? (
-          <InvoiceMobileCards
+          <InvoiceMobileLists
             invoices={invoiceLogic.filteredInvoices}
             onEdit={handleEdit}
             onDelete={handleDeleteClick}

@@ -19,6 +19,7 @@ import ImageIcon from "@mui/icons-material/Image";
 import ArrowDropUp from "@mui/icons-material/ArrowDropUp";
 import ArrowDropDown from "@mui/icons-material/ArrowDropDown";
 import { Item } from "@/src/services/item.service";
+import Image from "next/image";
 
 type Order = "asc" | "desc";
 
@@ -49,7 +50,9 @@ export default function ItemsTable({
       <Table>
         <TableHead>
           <TableRow sx={{ bgcolor: "#fafafa" }}>
-            {visibleColumns.picture && <TableCell width={70}>Picture</TableCell>}
+            {visibleColumns.picture && (
+              <TableCell width={70}>Picture</TableCell>
+            )}
 
             {visibleColumns.itemName && (
               <TableCell>
@@ -92,7 +95,9 @@ export default function ItemsTable({
               </TableCell>
             )}
 
-            {visibleColumns.actions && <TableCell width={120}>Actions</TableCell>}
+            {visibleColumns.actions && (
+              <TableCell width={120}>Actions</TableCell>
+            )}
           </TableRow>
         </TableHead>
 
@@ -110,10 +115,15 @@ export default function ItemsTable({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      position: "relative", 
                       border: "1px solid #e0e0e0",
                     }}
                   >
-                    <ImageIcon sx={{ color: "#9e9e9e" }} />
+                    {item.itemPicture ? (
+                      <Image src={item.itemPicture} alt={item.itemName} fill />
+                    ) : (
+                      <ImageIcon sx={{ color: "#9e9e9e" }} />
+                    )}
                   </Box>
                 </TableCell>
               )}

@@ -41,8 +41,55 @@ export const useItemsLogic = () => {
     queryFn: itemService.getList,
   });
 
+  const picturesQuery = useQuery({
+    queryKey: ["item-pictures"],
+    enabled: !!items.length,
+    queryFn: async () => {
+      const results: Record<number, string | null> = {};
+
+      await Promise.all(
+        items.map(async (item) => {
+          const url = await itemService.getItemPicture(item.itemID);
+          results[item.itemID] = url;
+        })
+      );
+
+      return results;
+    },
+  });
+
+  const itemsWithPictures = useMemo(() => {
+    if (!picturesQuery.data) return items;
+
+    return items.map((item) => ({
+      ...item,
+      itemPicture: picturesQuery.data[item.itemID] ?? null,
+    }));
+  }, [items, picturesQuery.data]);
+
+  const uploadImage = async (itemID: number, file: File): Promise<void> => {
+    await itemService.updateItemPicture(itemID, file);
+    queryClient.invalidateQueries({ queryKey: ["item-pictures"] });
+  };
+
   const createMutation = useMutation({
-    mutationFn: itemService.create,
+    mutationFn: async (payload: CreateItemPayload) => {
+      const item = await itemService.create(payload);
+      if (payload.itemPicture) {
+        try {
+          await uploadImage(item.primaryKeyID, payload.itemPicture);
+        } catch (error) {
+          setSnackbar({
+            open: true,
+            message: axios.isAxiosError(error)
+              ? error?.response?.data || error.message
+              : "Failed to upload image",
+            severity: "error",
+          });
+        }
+      }
+      return item;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
       setSnackbar({
@@ -64,9 +111,28 @@ export const useItemsLogic = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: itemService.update,
+    mutationFn: async (payload: UpdateItemPayload) => {
+      const item = await itemService.update(payload);
+      if (payload.itemPicture) {
+        try {
+          await uploadImage(item.primaryKeyID, payload.itemPicture);
+        } catch (error) {
+          setSnackbar({
+            open: true,
+            message: axios.isAxiosError(error)
+              ? error?.response?.data || error.message
+              : "Failed to upload image",
+            severity: "error",
+          });
+        }
+      }
+
+      return item;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["item-pictures"] });
+
       setSnackbar({
         open: true,
         message: "Item updated successfully!",
@@ -89,11 +155,13 @@ export const useItemsLogic = () => {
     mutationFn: itemService.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["item-pictures"] });
       setSnackbar({
         open: true,
         message: "Item deleted successfully!",
         severity: "success",
       });
+
       setDeleteDialogOpen(false);
     },
     onError: (error) => {
@@ -108,8 +176,8 @@ export const useItemsLogic = () => {
   });
 
   const filtered = useMemo(
-    () => filterAndSortItems(items, query, order, orderBy),
-    [items, query, order, orderBy]
+    () => filterAndSortItems(itemsWithPictures, query, order, orderBy),
+    [itemsWithPictures, query, order, orderBy]
   );
 
   const handleRequestSort = (property: keyof Item) => {
@@ -189,7 +257,7 @@ export const useItemsLogic = () => {
     deleteDialogOpen,
     itemToDelete,
     snackbar,
-    items,
+    items: itemsWithPictures,
     filtered,
     isLoading,
     error,

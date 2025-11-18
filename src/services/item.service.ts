@@ -15,7 +15,7 @@ export interface CreateItemPayload {
   description: string;
   salesRate: number;
   discountPct: number;
-  itemPicture?: string | null;
+  itemPicture?: File | null;
 }
 
 export interface UpdateItemPayload {
@@ -25,7 +25,13 @@ export interface UpdateItemPayload {
   salesRate: number;
   discountPct: number;
   updatedOn: string | null;
-  itemPicture?: string | null;
+  itemPicture?: File | null;
+}
+
+export interface PostPutItemResponse {
+  primaryKeyID: number;
+  nofRecordseffected: number;
+  updatedOn: string | null;
 }
 
 export const itemService = {
@@ -34,17 +40,34 @@ export const itemService = {
     return data;
   },
 
-  create: async (payload: CreateItemPayload): Promise<Item> => {
+  create: async (payload: CreateItemPayload): Promise<PostPutItemResponse> => {
     const { data } = await api.post("/Item", payload);
     return data;
   },
 
-  update: async (payload: UpdateItemPayload): Promise<Item> => {
+  update: async (payload: UpdateItemPayload): Promise<PostPutItemResponse> => {
     const { data } = await api.put("/Item", payload);
     return data;
   },
 
   delete: async (itemID: number): Promise<void> => {
     await api.delete(`/Item/${itemID}`);
+  },
+
+  updateItemPicture: async (itemID: number, file: File): Promise<void> => {
+    const formData = new FormData();
+    formData.append("ItemID", itemID.toString());
+    formData.append("File", file);
+
+    await api.post("/Item/UpdateItemPicture", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
+  getItemPicture: async (itemID: number): Promise<string | null> => {
+      const { data } = await api.get(`/Item/PictureThumbnail/${itemID}`);
+      return typeof data === "string" ? data : null;
   },
 };

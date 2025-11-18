@@ -808,7 +808,6 @@ export default function InvoiceFormPage({ invoiceID }: InvoiceFormPageProps) {
               </Box>
             </Box>
 
-            {/* Total */}
             <Box
               sx={{
                 display: "flex",

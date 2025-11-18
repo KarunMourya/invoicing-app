@@ -211,9 +211,9 @@ export const InvoiceStatsCards: React.FC<InvoiceStatsCardsProps> = ({
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={topItems.map((i) => ({
-                        name: i.itemName,
-                        value: i.amountSum,
+                      data={topItems.map((index) => ({
+                        name: index.itemName,
+                        value: index.amountSum,
                       }))}
                       dataKey="value"
                       nameKey="name"

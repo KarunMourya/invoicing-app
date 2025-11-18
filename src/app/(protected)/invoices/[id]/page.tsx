@@ -1,6 +1,6 @@
 "use client";
 
-import InvoiceFormPage from "@/src/components/Invoice/InvoiceFormPage";
+import InvoiceFormPage from "@/src/components/InvoicePage/InvoiceFormPage";
 import { use } from "react";
 
 export default function EditInvoicePage({

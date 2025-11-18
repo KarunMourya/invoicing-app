@@ -189,15 +189,15 @@ export const useInvoicesLogic = () => {
         "Tax Amount",
         "Total",
       ],
-      ...filteredInvoices.map((inv) => [
-        inv.invoiceNo,
-        inv.invoiceDate,
-        inv.customerName,
-        inv.totalItems.toString(),
-        inv.subTotal.toString(),
-        inv.taxPercentage.toString(),
-        inv.taxAmount.toString(),
-        inv.invoiceAmount.toString(),
+      ...filteredInvoices.map((invoice) => [
+        invoice.invoiceNo,
+        invoice.invoiceDate,
+        invoice.customerName,
+        invoice.totalItems.toString(),
+        invoice.subTotal.toString(),
+        invoice.taxPercentage.toString(),
+        invoice.taxAmount.toString(),
+        invoice.invoiceAmount.toString(),
       ]),
     ]
       .map((row) => row.join(","))
@@ -215,20 +215,25 @@ export const useInvoicesLogic = () => {
     try {
       const company = getCompanyInfo();
 
-      setSelectedInvoiceID(invoice.invoiceID);
+      const invoiceDetails = await invoiceService.getById(invoice.invoiceID);
 
-      const { data: full } = await fetchInvoiceDetail();
-
-      if (!full) return;
+      if (!invoiceDetails) {
+        setSnackbar({
+          open: true,
+          message: "Failed to load invoice details",
+          severity: "error",
+        });
+        return;
+      }
 
       const invoiceData = {
-        invoiceNo: full.invoiceNo,
-        invoiceDate: full.invoiceDate,
-        customerName: full.customerName,
-        customerAddress: full.address || "",
-        city: full.city || "",
-        notes: full.notes || "",
-        items: full.lines.map((line) => ({
+        invoiceNo: invoiceDetails.invoiceNo,
+        invoiceDate: invoiceDetails.invoiceDate,
+        customerName: invoiceDetails.customerName,
+        customerAddress: invoiceDetails.address || "",
+        city: invoiceDetails.city || "",
+        notes: invoiceDetails.notes || "",
+        items: invoiceDetails.lines.map((line) => ({
           itemName: line.itemID.toString(),
           description: line.description,
           quantity: line.quantity,
@@ -240,10 +245,10 @@ export const useInvoicesLogic = () => {
             line.discountPct
           ),
         })),
-        subtotal: full.subTotal,
-        taxPercent: full.taxPercentage,
-        taxAmount: full.taxAmount,
-        total: full.invoiceAmount,
+        subtotal: invoiceDetails.subTotal,
+        taxPercent: invoiceDetails.taxPercentage,
+        taxAmount: invoiceDetails.taxAmount,
+        total: invoiceDetails.invoiceAmount,
       };
 
       const companyInfo = {

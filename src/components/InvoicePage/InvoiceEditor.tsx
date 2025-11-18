@@ -74,19 +74,22 @@ export default function InvoiceEditorPage() {
   });
 
   useEffect(() => {
-    if (invoiceDetail) {
-      setForm({
-        invoiceNo: invoiceDetail.invoiceNo,
-        invoiceDate: invoiceDetail.invoiceDate.split("T")[0],
-        customerName: invoiceDetail.customerName,
-        address: invoiceDetail.address || "",
-        city: invoiceDetail.city || "",
-        taxPercentage: invoiceDetail.taxPercentage.toString(),
-        notes: invoiceDetail.notes || "",
-      });
-      setLines(invoiceDetail.lines || []);
-      setUpdatedOn(invoiceDetail.updatedOn);
-    }
+    const invoiceDetailLoad = () => {
+      if (invoiceDetail) {
+        setForm({
+          invoiceNo: invoiceDetail.invoiceNo,
+          invoiceDate: invoiceDetail.invoiceDate.split("T")[0],
+          customerName: invoiceDetail.customerName,
+          address: invoiceDetail.address || "",
+          city: invoiceDetail.city || "",
+          taxPercentage: invoiceDetail.taxPercentage.toString(),
+          notes: invoiceDetail.notes || "",
+        });
+        setLines(invoiceDetail.lines || []);
+        setUpdatedOn(invoiceDetail.updatedOn);
+      }
+    };
+    invoiceDetailLoad();
   }, [invoiceDetail]);
 
   const totals = React.useMemo(() => {
@@ -144,17 +147,16 @@ export default function InvoiceEditorPage() {
   };
 
   const handleDeleteRow = (index: number) => {
-    if (lines.length === 1) return; // Keep at least one row
-    const newLines = lines.filter((_, i) => i !== index);
-    // Re-number rows
-    newLines.forEach((line, i) => {
-      line.rowNo = i + 1;
+    if (lines.length === 1) return;
+    const newLines = lines.filter((_, lineIndex) => lineIndex !== index);
+    newLines.forEach((line, lineIndex) => {
+      line.rowNo = lineIndex + 1;
     });
     setLines(newLines);
   };
 
   const handleItemChange = (index: number, itemID: number) => {
-    const item = items.find((i) => i.itemID === itemID);
+    const item = items.find((item) => item.itemID === itemID);
     if (item) {
       const newLines = [...lines];
       newLines[index] = {
@@ -179,7 +181,6 @@ export default function InvoiceEditorPage() {
   };
 
   const handleSave = async () => {
-    // Validation
     if (!form.invoiceNo.trim()) {
       alert("Invoice number is required");
       return;
@@ -231,7 +232,6 @@ export default function InvoiceEditorPage() {
 
   return (
     <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
       <Box
         sx={{
           px: { xs: 2, md: 4 },
@@ -270,7 +270,6 @@ export default function InvoiceEditorPage() {
 
       <Divider />
 
-      {/* Form Content */}
       <Box sx={{ flex: 1, overflow: "auto", px: { xs: 2, md: 4 }, py: 3 }}>
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
@@ -338,7 +337,6 @@ export default function InvoiceEditorPage() {
           </Box>
         </Paper>
 
-        {/* Line Items */}
         <Paper sx={{ p: 3, mb: 3 }}>
           <Box
             sx={{
@@ -504,7 +502,6 @@ export default function InvoiceEditorPage() {
           </Box>
         </Paper>
 
-        {/* Totals */}
         <Paper sx={{ p: 3 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
             Invoice Totals
@@ -518,7 +515,13 @@ export default function InvoiceEditorPage() {
               </Typography>
             </Box>
 
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <Typography>Tax</Typography>
               <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                 <TextField
@@ -536,7 +539,9 @@ export default function InvoiceEditorPage() {
                     },
                   }}
                 />
-                <Typography sx={{ fontWeight: 600, width: 120, textAlign: "right" }}>
+                <Typography
+                  sx={{ fontWeight: 600, width: 120, textAlign: "right" }}
+                >
                   {formatMoney(totals.taxAmount, company?.currencySymbol)}
                 </Typography>
               </Box>

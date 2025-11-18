@@ -20,7 +20,7 @@ interface Props {
   onPrint: (invoice: Invoice) => void;
 }
 
-export const InvoiceMobileCards: React.FC<Props> = ({
+export const InvoiceMobileLists: React.FC<Props> = ({
   invoices,
   onEdit,
   onDelete,
@@ -62,7 +62,6 @@ export const InvoiceMobileCards: React.FC<Props> = ({
             p: 2,
           }}
         >
-          {/* HEADER */}
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
               {invoice.invoiceNo}

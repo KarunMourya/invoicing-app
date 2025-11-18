@@ -164,10 +164,10 @@ export function ItemAddEditDialog({
         description: form.description.trim(),
         salesRate: parseFloat(form.salesRate),
         discountPct: parseFloat(form.discountPct),
-      } as Item;
+      } as CreateItemPayload | UpdateItemPayload;
 
-      if (picturePreview) {
-        payload.itemPicture = picturePreview;
+      if (itemPicture) {
+        payload.itemPicture = itemPicture;
       }
       await onSave(payload);
       onClose();
